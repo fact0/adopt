@@ -1,15 +1,15 @@
 from unittest import TestCase
 
 from app import app
-from models import db, User, Post, Tag, PostTag
+from models import db, Pet
 
 # Use test database and don't clutter tests with SQL
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql:///blogly_test'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql:///adopt_test'
 app.config['SQLALCHEMY_ECHO'] = False
 
 # Make Flask errors be real errors, rather than HTML pages with error info
 app.config['TESTING'] = True
-
+app.config['WTF_CSRF_ENABLED'] = False
 # This is a bit of hack, but don't use Flask DebugToolbar
 app.config['DEBUG_TB_HOSTS'] = ['dont-show-debug-toolbar']
 
@@ -17,33 +17,22 @@ db.drop_all()
 db.create_all()
 
 
-class BloglyUserTestCase(TestCase):
+class PetTestCase(TestCase):
     """Tests for user routes."""
 
     def setUp(self):
         """Add sample users."""
 
-        PostTag.query.delete()
-        Post.query.delete()
-        User.query.delete()
-        Tag.query.delete()
+        Pet.query.delete()
 
-        u1 = User(
-            first_name='Michael',
-            last_name='Schienbein',
-            image_url='/static/blank.png')
-        u2 = User(
-            first_name='Greg',
-            last_name='Abplanalp',
-            image_url='/static/blank.png')
-        u3 = User(
-            first_name='Ilya',
-            last_name='Ornatov',
-            image_url='/static/blank.png')
-        db.session.add_all([u1, u2, u3])
+        p1 = Pet(name="Pet One", species="dog", age="5", available=True)
+        p2 = Pet(name="Pet Two", species="cat", age="1", available=True)
+        p3 = Pet(name="Pet Three", species="porcupine",
+                 age="30", available=False)
+        db.session.add_all([p1, p2, p3])
         db.session.commit()
 
-        self.user_id = u1.id
+        self.pet_id = p1.id
 
     def tearDown(self):
         """Clean up any fouled transaction."""
@@ -56,268 +45,58 @@ class BloglyUserTestCase(TestCase):
             html = resp.get_data(as_text=True)
 
             self.assertEqual(resp.status_code, 200)
-            self.assertIn('Blogly Recent Posts:', html)
+            self.assertIn('Pet Adoption Site', html)
+            self.assertIn('Pet One', html)
+            self.assertIn('Pet Two', html)
+            self.assertIn('Pet Three', html)
 
     def test_404_page(self):
         with app.test_client() as client:
-            resp = client.get("/users/notauser")
+            resp = client.get("/notapet")
             html = resp.get_data(as_text=True)
 
             self.assertEqual(resp.status_code, 404)
-            self.assertIn('404: Page Not Found', html)
+            self.assertIn('404 Pet not found', html)
 
-    def test_users(self):
+    def test_pet_details(self):
         with app.test_client() as client:
-            resp = client.get("/users")
+            resp = client.get(f"/{self.pet_id}")
             html = resp.get_data(as_text=True)
 
             self.assertEqual(resp.status_code, 200)
-            self.assertIn('Michael Schienbein', html)
-            self.assertIn('Greg Abplanalp', html)
-            self.assertIn('Ilya Ornatov', html)
+            self.assertIn('Pet One', html)
 
-    def test_new_user(self):
+    def test_render_add_pet_form(self):
         with app.test_client() as client:
-            d = {"first_name": "Bob", "last_name": "Bobberson",
-                 "image_url": "/static/blank.png"}
-            resp = client.post("/users/new", data=d, follow_redirects=True)
+            resp = client.get("/add")
             html = resp.get_data(as_text=True)
 
             self.assertEqual(resp.status_code, 200)
-            self.assertIn("Bob Bobberson", html)
+            self.assertIn('Add a Pet', html)
 
-    def test_render_user_details(self):
+    def test_add_pet_form(self):
         with app.test_client() as client:
-            resp = client.get(f"/users/{self.user_id}")
+            d = {"name": "Pet Four", "species": "cat", "age": "4", "available": "True"}
+            resp = client.post("/add", data=d, follow_redirects=True)
             html = resp.get_data(as_text=True)
 
             self.assertEqual(resp.status_code, 200)
-            self.assertIn('Michael Schienbein', html)
+            self.assertIn("Pet Four", html)
 
-    def test_render_user_edit(self):
+    def test_render_edit_pet_form(self):
         with app.test_client() as client:
-            resp = client.get(f"/users/{self.user_id}/edit")
+            resp = client.get(f"/{self.pet_id}/edit")
             html = resp.get_data(as_text=True)
 
             self.assertEqual(resp.status_code, 200)
-            self.assertIn('<h2 class="display-3">Edit a User:</h2>', html)
+            self.assertIn('Edit a Pet', html)
 
-    def test_edit_user(self):
+    def test_edit_pet_form(self):
         with app.test_client() as client:
-            d = {"first_name": "Halim", "last_name": "Tannous",
-                 "image_url": ""}
-            resp = client.post(
-                f"/users/{self.user_id}/edit", data=d, follow_redirects=True)
+            d = {"name": "Pet Four", "species": "cat", "age": "4", "available": "True"}
+            resp = client.post(f"/{self.pet_id}/edit", data=d, follow_redirects=True)
             html = resp.get_data(as_text=True)
 
             self.assertEqual(resp.status_code, 200)
-            self.assertIn("Halim Tannous", html)
+            self.assertIn("Pet Four", html)
 
-    def test_delete_user(self):
-        with app.test_client() as client:
-            resp = client.get(
-                f"/users/{self.user_id}/delete", follow_redirects=True)
-            html = resp.get_data(as_text=True)
-
-            self.assertEqual(resp.status_code, 200)
-            self.assertNotEqual('Michael Schienbein', html)
-            self.assertIn('deleted', html)
-
-
-class BloglyPostTestCase(TestCase):
-    """Tests for post related routes."""
-
-    def setUp(self):
-        """Add sample posts users."""
-
-        PostTag.query.delete()
-        Post.query.delete()
-        User.query.delete()
-        Tag.query.delete()
-
-        u1 = User(
-            first_name='Michael',
-            last_name='Schienbein',
-            image_url='https://files.catbox.moe/g1vsie.png')
-        p1 = Post(
-            title='Test Post One',
-            content='This is a models unittest post',
-            user=u1)
-
-        db.session.add_all([u1, p1])
-        db.session.commit()
-
-        self.user_id = u1.id
-        self.post_id = p1.id
-
-    def tearDown(self):
-        """Clean up any fouled transaction."""
-
-        db.session.rollback()
-
-    def test_render_new_post_page(self):
-        with app.test_client() as client:
-            resp = client.get(f"/users/{self.user_id}/posts/new")
-            html = resp.get_data(as_text=True)
-
-            self.assertEqual(resp.status_code, 200)
-            self.assertIn('Michael Schienbein', html)
-            self.assertIn('Add Post for', html)
-
-    def test_new_post(self):
-        with app.test_client() as client:
-            d = {"post_title": "Test Post Two",
-                 "post_text": "Also a Test Post"}
-            resp = client.post(
-                f"/users/{self.user_id}/posts/new", data=d, follow_redirects=True)
-            html = resp.get_data(as_text=True)
-
-            self.assertEqual(resp.status_code, 200)
-            self.assertIn("Test Post Two", html)
-
-    def test_render_post_page(self):
-        with app.test_client() as client:
-            resp = client.get(f"/posts/{self.post_id}")
-            html = resp.get_data(as_text=True)
-
-            self.assertEqual(resp.status_code, 200)
-            self.assertIn('Test Post One', html)
-
-    def test_render_edit_post(self):
-        with app.test_client() as client:
-            resp = client.get(f"/posts/{self.post_id}/edit")
-            html = resp.get_data(as_text=True)
-
-            self.assertEqual(resp.status_code, 200)
-            self.assertIn('<h2 class="display-4">Edit Post:</h2>', html)
-
-    def test_edit_post(self):
-        with app.test_client() as client:
-            d = {"post_title": "Test Post Three",
-                 "post_text": "Also a Test Post, But Number Three"}
-            resp = client.post(
-                f"/posts/{self.post_id}/edit", data=d, follow_redirects=True)
-            html = resp.get_data(as_text=True)
-
-            self.assertEqual(resp.status_code, 200)
-            self.assertIn("Test Post Three", html)
-
-    def test_delete_post(self):
-        with app.test_client() as client:
-            resp = client.get(
-                f"/posts/{self.post_id}/delete", follow_redirects=True)
-            html = resp.get_data(as_text=True)
-
-            self.assertEqual(resp.status_code, 200)
-            self.assertNotEqual('Text Post One', html)
-            self.assertIn('deleted', html)
-
-
-class BloglyTagTestCase(TestCase):
-    """Tests for tag related routes."""
-
-    def setUp(self):
-        """Add sample posts users tags posttags."""
-
-        PostTag.query.delete()
-        Post.query.delete()
-        User.query.delete()
-        Tag.query.delete()
-
-        u1 = User(
-            first_name='Michael',
-            last_name='Schienbein',
-            image_url='https://files.catbox.moe/g1vsie.png')
-        p1 = Post(
-            title='Test Post One',
-            content='This is a models unittest post',
-            user=u1)
-        t1 = Tag(name="Test1")
-
-        t2 = Tag(name="Test2")
-
-        db.session.add(u1)
-        db.session.commit()
-        db.session.add_all([p1, t1, t2])
-        db.session.commit()
-
-        pt = PostTag(post_id=p1.id, tag_id=t1.id)
-        db.session.add(pt)
-        db.session.commit()
-
-        self.user_id = u1.id
-        self.post_id = p1.id
-        self.tags_id = t1.id
-
-    def tearDown(self):
-        """Clean up any fouled transaction."""
-
-        db.session.rollback()
-
-    def test_render_tags_page(self):
-        with app.test_client() as client:
-            resp = client.get(f"/tags")
-            html = resp.get_data(as_text=True)
-
-            self.assertEqual(resp.status_code, 200)
-            self.assertIn('Tags List', html)
-            self.assertIn('Test1', html)
-            self.assertIn('Test2', html)
-
-    def test_render_tags_new_page(self):
-        with app.test_client() as client:
-            resp = client.get(f"/tags/new")
-            html = resp.get_data(as_text=True)
-
-            self.assertEqual(resp.status_code, 200)
-            self.assertIn('Add New Tag', html)
-            self.assertIn('Submit Tag', html)
-
-    def test_new_tag_post(self):
-        with app.test_client() as client:
-            d = {"tag_name": "Test1"}
-            resp = client.post(
-                f"/tags/new", data=d, follow_redirects=True)
-            html = resp.get_data(as_text=True)
-
-            self.assertEqual(resp.status_code, 200)
-            self.assertIn("Test1", html)
-
-    def test_render_show_tag_page(self):
-        with app.test_client() as client:
-            resp = client.get(f"/tags/{self.tags_id}")
-            html = resp.get_data(as_text=True)
-
-            self.assertEqual(resp.status_code, 200)
-            self.assertIn('Test1', html)
-            self.assertIn('Posts Containing', html)
-            self.assertIn('Test Post One', html)
-
-    def test_render_edit_tag_page(self):
-        with app.test_client() as client:
-            resp = client.get(f"/tags/{self.tags_id}/edit")
-            html = resp.get_data(as_text=True)
-
-            self.assertEqual(resp.status_code, 200)
-            self.assertIn('Test1', html)
-            self.assertIn('Edit', html)
-
-    def test_edit_tag(self):
-        with app.test_client() as client:
-            d = {"tag_name": "Edit1"}
-            resp = client.post(
-                f"/tags/{self.tags_id}/edit", data=d, follow_redirects=True)
-            html = resp.get_data(as_text=True)
-
-            self.assertEqual(resp.status_code, 200)
-            self.assertIn("Edit1", html)
-
-    def test_delete_tag(self):
-        with app.test_client() as client:
-            resp = client.get(
-                f"/tags/{self.tags_id}/delete", follow_redirects=True)
-            html = resp.get_data(as_text=True)
-
-            self.assertEqual(resp.status_code, 200)
-            self.assertNotEqual('Test1', html)
-            self.assertIn('deleted', html)
