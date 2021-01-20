@@ -80,7 +80,6 @@ def edit_pet(pid):
     """Renders pet form and handles populating fields and updating db"""
     pet = Pet.query.get_or_404(pid)
     form = PetForm(obj=pet)
-
     if form.validate_on_submit():
         pet.name = form.name.data
         pet.species = form.species.data
