@@ -9,7 +9,15 @@ block content%}
 			<div class="card">
 				<div class="card-image">
 					<figure class="image is-256x256 is-1by1">
-						<a href="/{{pet.id}}"><img src="{{pet.photo_url}}" alt="Pet image" /></a>
+						<a href="/{{pet.id}}"
+							><img
+								src="{% if pet.photo %}
+								{{pet.photo}}
+								{% else %}
+							{{pet.photo_url}}
+							{% endif %}"
+								alt="Pet image"
+						/></a>
 					</figure>
 				</div>
 				<div class="card-content">

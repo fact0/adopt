@@ -1,7 +1,10 @@
-from flask import Flask, request, render_template, redirect, flash, session
+from flask import Flask, request, render_template, redirect, flash, session, url_for
 from flask_debugtoolbar import DebugToolbarExtension
 from models import db, connect_db, Pet
 from forms import PetForm
+from flask_uploads import UploadSet, configure_uploads, IMAGES
+from werkzeug.utils import secure_filename
+
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql:///adopt'
@@ -9,8 +12,10 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_ECHO'] = True
 app.config['SECRET_KEY'] = 'key'
 app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False
+app.config['UPLOADED_IMAGES_DEST'] = '/static/media'
 debug = DebugToolbarExtension(app)
-
+images = UploadSet('images', IMAGES)
+configure_uploads(app, (images,))
 
 connect_db(app)
 db.create_all()
@@ -19,7 +24,7 @@ db.create_all()
 @app.route('/')
 def home_page():
     """Renders home page with pets"""
-    pets = Pet.query.order_by(Pet.available.desc(),Pet.name.asc()).all()
+    pets = Pet.query.order_by(Pet.available.desc(), Pet.name.asc()).all()
 
     return render_template('index.html', pets=pets)
 
@@ -45,8 +50,21 @@ def add_pet():
     form = PetForm()
 
     if form.validate_on_submit():
-        data = {k: v for k, v in form.data.items() if k != "csrf_token"}
-        new_pet = Pet(**data)
+        filename = secure_filename(form.photo.data.filename)
+        form.photo.data.save('static/media/' + filename)
+        # kwargs = {k: v for k, v in form.data.items() if k != "csrf_token"}
+        # new_pet = Pet(**kwargs)
+        new_pet = Pet(
+            name=form.name.data,
+            species=form.species.data,
+            age=form.age.data,
+            notes=form.notes.data,
+            available=form.available.data
+        )
+        if form.photo.data:
+            new_pet.photo = 'static/media/' + f'{form.photo.data.filename}'
+        elif form.photo_url.data:
+            new_pet.photo_url = form.photo_url.data
         db.session.add(new_pet)
         db.session.commit()
         flash(f"Created new pet: {new_pet.name}", 'success')
