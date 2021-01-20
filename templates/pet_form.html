@@ -1,0 +1,62 @@
+<div class="columns">
+	<div class="column is-4 is-offset-4 has-text-left">
+		<section class="mt-3">
+			<form method="POST">
+				{{ form.hidden_tag() }}
+				<div class="field">
+					{{ form.name.label(class_="label is-small") }}
+					<div class="control">{{ form.name(class_="input my-2") }}</div>
+					{% for err in form.name.errors %}
+					<p class="help is-danger">{{ err }}</p>
+					{% endfor %}
+				</div>
+				<div class="field">
+					{{ form.species.label(class_="label is-small") }}
+					<div class="control">
+						<div class="select my-2 is-fullwidth">{{ form.species(class_="") }}</div>
+					</div>
+					{% for err in form.species.errors %}
+					<p class="help is-danger">{{ err }}</p>
+					{% endfor %}
+				</div>
+				<div class="field">
+					{{ form.age.label(class_="label is-small") }}
+					<div class="control">{{ form.age(class_="input my-2") }}</div>
+					{% for err in form.age.errors %}
+					<p class="help is-danger">{{ err }}</p>
+					{% endfor %}
+				</div>
+				<div class="field">
+					{{ form.photo_url.label(class_="label is-small") }}
+					<div class="control">{{ form.photo_url(class_="input my-2") }}</div>
+					{% for err in form.photo_url.errors %}
+					<p class="help is-danger">{{ err }}</p>
+					{% endfor %}
+				</div>
+				<div class="field">
+					{{ form.notes.label(class_="label is-small") }}
+					<div class="control">{{ form.notes(class_="input my-2") }}</div>
+					{% for err in form.notes.errors %}
+					<p class="help is-danger">{{ err }}</p>
+					{% endfor %}
+				</div>
+				<div class="field">
+					<div class="control is-flex is-justify-content-center">
+						<label class="checkbox is-size-5" for="available"
+							>{{ form.available()}} Is this pet available?</label
+						>
+					</div>
+					{% for err in form.available.errors %}
+					<p class="help is-danger">{{ err }}</p>
+					{% endfor %}
+				</div>
+				<div class="field is-pulled-right">
+					<div class="control">
+						<button class="button is-primary">Submit</button>
+					</div>
+				</div>
+			</form>
+		</section>
+	</div>
+</div>
+

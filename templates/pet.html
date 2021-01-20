@@ -1,0 +1,44 @@
+{% extends 'base.html' %} {% block title %}Home Page{% endblock%} {% block
+hero_title %}Pet Adoption Site{% endblock %} {% block hero_subtitle %}Welcome to
+our pet adoption page, check out the available pets below!{% endblock %} {%
+block content%}
+<div class="container mt-0">
+	<div class="columns">
+		<div class="column"></div>
+		<div class="column is-one-quarter mt-0">
+			<div class="card">
+				<div class="card-image">
+					<figure class="image is-256x256 is-1by1">
+						<a href="/{{pet.id}}"><img src="{{pet.photo_url}}" alt="Pet image" /></a>
+					</figure>
+				</div>
+				<div class="card-content">
+					<div class="media">
+						<div class="media-content is-clipped">
+							<a href="/{{pet.id}}"><p class="title is-4">{{pet.name}}</p></a>
+							<p class="subtitle is-6">The {{pet.species}}</p>
+						</div>
+					</div>
+					<div class="content is-medium">
+						{{pet.name}} {% if pet.age %} is {{pet.age}} years old {% endif %} {% if
+						pet.available %} and is <b>available</b> for adoption. {% else %} and is
+						<b>not available</b> for adoption. {% endif %}
+					</div>
+					<div class="control is-pulled-right mb-4">
+						<a href="/{{pet.id}}/edit" class="button is-primary">Edit Pet</a>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="column is-half">
+			<article class="message">
+				<div class="message-header">
+					<p class>Notes</p>
+				</div>
+				<div class="message-body">{% if pet.notes %} {{pet.notes}} {% endif %}</div>
+			</article>
+		</div>
+		<div class="column"></div>
+	</div>
+</div>
+{% endblock %}
