@@ -20,11 +20,13 @@ class PetForm(FlaskForm):
         ('cat', 'Cat'), ('dog', 'Dog'), ('porcupine', 'Porcupine')])
     age = IntegerField("Pet Age", validators=[
                        Optional(), NumberRange(min=1, max=30, message=("Please enter a valid age from 0 to 30"))])
-    photo_url = StringField("Pet Photo URL", filters=[lambda x: x or DEFAULT_IMAGE], validators=[
+    photo_url = StringField("Pet Photo URL", validators=[
                             Optional(strip_whitespace=True,), URL(message="Please enter a valid URL")])
-    photo = FileField('image', validators=[
-        FileAllowed(images, 'Images only!')
-    ])
+    photo = FileField('image', validators=[Optional(strip_whitespace=True,), FileAllowed(images, 'Images only!')
+                                           ])
     notes = TextAreaField("Enter notes about pet", validators=[
                           Optional(), Length(min=10, message="Please Enter more than 10 characters")])
     available = BooleanField("Is this pet available?")
+
+
+# filters=[lambda x: x or DEFAULT_IMAGE]

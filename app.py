@@ -14,6 +14,7 @@ app.config['SECRET_KEY'] = 'key'
 app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False
 app.config['UPLOADED_IMAGES_DEST'] = '/static/media'
 debug = DebugToolbarExtension(app)
+DEFAULT_IMAGE = 'https://files.catbox.moe/oo5ikc.jpg'
 images = UploadSet('images', IMAGES)
 configure_uploads(app, (images,))
 
@@ -50,8 +51,9 @@ def add_pet():
     form = PetForm()
 
     if form.validate_on_submit():
-        filename = secure_filename(form.photo.data.filename)
-        form.photo.data.save('static/media/' + filename)
+        if form.photo.data:
+            filename = secure_filename(form.photo.data.filename)
+            form.photo.data.save('static/media/' + filename)
         # kwargs = {k: v for k, v in form.data.items() if k != "csrf_token"}
         # new_pet = Pet(**kwargs)
         new_pet = Pet(
@@ -63,7 +65,7 @@ def add_pet():
         )
         if form.photo.data:
             new_pet.photo = 'static/media/' + f'{form.photo.data.filename}'
-        elif form.photo_url.data:
+        elif form.photo_url.data and form.photo_url.data != "":
             new_pet.photo_url = form.photo_url.data
         db.session.add(new_pet)
         db.session.commit()
