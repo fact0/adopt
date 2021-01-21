@@ -49,13 +49,15 @@ def page_not_found(e):
 def add_pet():
     """Renders pet form and handles adding new pet to db"""
     form = PetForm()
-
     if form.validate_on_submit():
-        if form.photo.data:
+        file = form.photo.data
+        if file:
             filename = secure_filename(form.photo.data.filename)
+            # raise
             form.photo.data.save('static/media/' + filename)
         # kwargs = {k: v for k, v in form.data.items() if k != "csrf_token"}
         # new_pet = Pet(**kwargs)
+
         new_pet = Pet(
             name=form.name.data,
             species=form.species.data,
@@ -63,8 +65,8 @@ def add_pet():
             notes=form.notes.data,
             available=form.available.data
         )
-        if form.photo.data:
-            new_pet.photo = 'static/media/' + f'{form.photo.data.filename}'
+        if file:
+            new_pet.photo = 'static/media/' + f'{filename}'
         elif form.photo_url.data and form.photo_url.data != "":
             new_pet.photo_url = form.photo_url.data
         db.session.add(new_pet)
@@ -81,14 +83,22 @@ def edit_pet(pid):
     pet = Pet.query.get_or_404(pid)
     form = PetForm(obj=pet)
     if form.validate_on_submit():
+        file = form.photo.data
+        if file:
+            filename = secure_filename(form.photo.data.filename)
+            form.photo.data.save('static/media/' + filename)
+        if file:
+            pet.photo = 'static/media/' + f'{filename}'
+        elif form.photo_url.data and form.photo_url.data != "":
+            pet.photo_url = form.photo_url.data if form.photo_url else pet.photo_url
         pet.name = form.name.data
         pet.species = form.species.data
-        pet.photo_url = form.photo_url.data if form.photo_url else pet.photo_url
         pet.age = form.age.data
         pet.notes = form.notes.data
         pet.available = form.available.data
 
         db.session.commit()
+        # raise
         flash(f"Edited pet: {pet.name}", 'success')
         return redirect(f'/{pid}')
     else:

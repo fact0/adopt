@@ -9,5 +9,3 @@ how to use kwargs on all the form data items, but exclude the photo upload field
 it uses a lot of seperate logic and it can't be added nicely through iterating the key value pairs like the other pairs, just not sure how to add another NOT this statement to the end.
 
 Add form validation that will give an error if both a url input and a file to upload are populated, just wanted to make it consistent and also give an error message like the other required fields do. something like "please choose either a url or upload a file". right now you can do both but i just have jinja looking for the uploaded file first and rendering that if its there.
-
-need to update edit route
